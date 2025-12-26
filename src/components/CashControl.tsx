@@ -22,9 +22,7 @@ import {
   Filter,
   BarChart3,
   Target,
-  Award,
-  History,
-  FileText
+  Award
 } from 'lucide-react'
 
 interface DailySales {
@@ -100,8 +98,6 @@ const CashControl: React.FC = () => {
   const [expandedSales, setExpandedSales] = useState<Set<string>>(new Set())
   const [saleItems, setSaleItems] = useState<Record<string, SaleItem[]>>({})
   const [cashClosure, setCashClosure] = useState<CashClosure | null>(null)
-  const [showClosureHistory, setShowClosureHistory] = useState(false)
-  const [closureHistory, setClosureHistory] = useState<CashClosure[]>([])
 
   const loadDailySummary = async () => {
     if (!user) return
@@ -330,62 +326,6 @@ const CashControl: React.FC = () => {
       }
     } catch (error) {
       console.error('Error checking existing closure:', error)
-    }
-  }
-
-  const loadClosureHistory = async () => {
-    if (!user) return
-
-    try {
-      let query = supabase
-        .from('cash_closures')
-        .select(`
-          id,
-          closure_date,
-          closed_by,
-          closed_at,
-          total_sales_usd,
-          total_sales_bs,
-          total_orders,
-          completed_orders,
-          cancelled_orders,
-          pending_orders,
-          exchange_rate_avg,
-          notes,
-          users!closed_by(full_name)
-        `)
-        .order('closure_date', { ascending: false })
-        .limit(10)
-
-      // If user is seller, only show their closures
-      if (user.role === 'seller') {
-        query = query.eq('closed_by', user.id)
-      }
-
-      const { data: closures, error } = await query
-
-      if (error) throw error
-
-      const formattedClosures: CashClosure[] = closures?.map(closure => ({
-        id: closure.id,
-        closure_date: closure.closure_date,
-        closed_by: closure.closed_by,
-        closed_by_name: (closure.users as any)?.full_name || 'Usuario',
-        closed_at: closure.closed_at,
-        total_sales_usd: closure.total_sales_usd,
-        total_sales_bs: closure.total_sales_bs,
-        total_orders: closure.total_orders,
-        completed_orders: closure.completed_orders,
-        cancelled_orders: closure.cancelled_orders,
-        pending_orders: closure.pending_orders,
-        exchange_rate_avg: closure.exchange_rate_avg,
-        notes: closure.notes
-      })) || []
-
-      setClosureHistory(formattedClosures)
-    } catch (error) {
-      console.error('Error loading closure history:', error)
-      showErrorToast('Error al cargar el historial de cierres')
     }
   }
 
@@ -1200,103 +1140,6 @@ ${productSales.slice(0, 3).map((product, index) =>
           </p>
         )}
       </div>
-
-      {/* Cash Closure History */}
-      {showClosureHistory && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-              <History className="w-5 h-5 mr-2" />
-              Historial de Cierres de Caja
-            </h3>
-            <button
-              onClick={() => setShowClosureHistory(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md flex items-center space-x-2"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>Cerrar</span>
-            </button>
-          </div>
-
-          {closureHistory.length > 0 ? (
-            <div className="space-y-4">
-              {closureHistory.map((closure) => (
-                <div key={closure.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Closure Info */}
-                    <div>
-                      <div className="flex items-center space-x-2 mb-3">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          Cierre del {new Date(closure.closure_date).toLocaleDateString()}
-                        </h4>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Cerrado por:</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{closure.closed_by_name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Fecha y Hora:</span>
-                          <span className="text-gray-900 dark:text-white">
-                            {new Date(closure.closed_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Tasa Promedio:</span>
-                          <span className="text-gray-900 dark:text-white">
-                            {closure.exchange_rate_avg.toFixed(2)} Bs/$
-                          </span>
-                        </div>
-                        {closure.notes && (
-                          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{closure.notes}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Financial Summary */}
-                    <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-3">Resumen Financiero</h5>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                          <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                            {formatCurrency(closure.total_sales_usd, 'USD')}
-                          </div>
-                          <div className="text-xs text-green-600 dark:text-green-400">Total USD</div>
-                        </div>
-                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {formatCurrency(closure.total_sales_bs, 'BS')}
-                          </div>
-                          <div className="text-xs text-blue-600 dark:text-blue-400">Total Bs.</div>
-                        </div>
-                        <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                          <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                            {closure.completed_orders}
-                          </div>
-                          <div className="text-xs text-purple-600 dark:text-purple-400">Completados</div>
-                        </div>
-                        <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="text-lg font-bold text-gray-600 dark:text-gray-400">
-                            {closure.total_orders}
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">Total Pedidos</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              No hay registros de cierres de caja
-            </p>
-          )}
-        </div>
-      )}
     </div>
   )
 }

@@ -200,7 +200,7 @@ const Categories: React.FC = () => {
               <div className="mb-4">
                 <Switch
                   checked={category.is_active}
-                  onChange={(checked) => toggleCategoryStatus(category)}
+                  onChange={() => toggleCategoryStatus(category)}
                   label={category.is_active ? 'Activa' : 'Inactiva'}
                   size="sm"
                 />

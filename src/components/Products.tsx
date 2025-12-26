@@ -8,7 +8,6 @@ import {
   Trash2, 
   Search,
   Package,
-  Filter,
   X
 } from 'lucide-react'
 

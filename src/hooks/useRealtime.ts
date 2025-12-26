@@ -1,6 +1,19 @@
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+interface PayloadData {
+  id?: string
+  status?: string
+  [key: string]: any
+}
+
+interface RealtimePayload {
+  eventType: string
+  table: string
+  new?: PayloadData
+  old?: PayloadData
+}
+
 export const useRealtime = (table: string, callback: () => void, events: string[] = ['*']) => {
   useEffect(() => {
     console.log(`🔗 Setting up realtime listener for table: ${table}, events: ${events.join(', ')}`)
@@ -16,7 +29,7 @@ export const useRealtime = (table: string, callback: () => void, events: string[
           schema: 'public',
           table: table,
         },
-        (payload) => {
+        (payload: RealtimePayload) => {
           console.log(`📡 Realtime ${event} on ${table}:`, {
             event: payload.eventType,
             table: payload.table,
